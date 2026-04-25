@@ -76,7 +76,7 @@ struct HabitProvider: TimelineProvider {
             return HabitWidgetEntry(date: Date(), habitTitle: "—", streak: 0, isCompleted: false)
         }
 
-        let context = container.mainContext
+        let context = ModelContext(container)
         let descriptor = FetchDescriptor<Habit>(predicate: #Predicate { $0.isActive })
 
         if let habit = try? context.fetch(descriptor).first {
