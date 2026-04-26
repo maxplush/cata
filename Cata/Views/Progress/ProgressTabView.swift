@@ -7,6 +7,11 @@ struct ProgressTabView: View {
 
     private var active: Habit? { habits.first(where: \.isActive) }
 
+    private var rule: some View {
+        Rectangle().fill(Color.cataSand).frame(maxWidth: .infinity).frame(height: 0.5)
+            .padding(.horizontal, 24)
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -14,14 +19,14 @@ struct ProgressTabView: View {
 
                 if let habit = active {
                     ScrollView {
-                        VStack(spacing: 20) {
-                            statsRow(habit)
-                                .padding(.top, 4)
-                            CalendarStreakView(habit: habit)
-                            WeeklySummaryView(habit: habit, checkIns: checkIns)
+                        VStack(alignment: .leading, spacing: 0) {
+                            statsSection(habit)
+                            rule
+                            calendarSection(habit)
+                            rule
+                            weeklySection(habit)
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 40)
+                        .padding(.bottom, 60)
                     }
                 } else {
                     emptyState
@@ -32,42 +37,69 @@ struct ProgressTabView: View {
         }
     }
 
-    private func statsRow(_ habit: Habit) -> some View {
-        HStack(spacing: 10) {
-            statCard("\(habit.currentStreak)",            "Streak",     "flame.fill",                .cataTerra)
-            statCard("\(Int(habit.completionRateLast7Days * 100))%", "This week",  "chart.line.uptrend.xyaxis", .cataSage)
-            statCard("\(checkIns.count)",                 "Check-ins",  "sun.horizon.fill",          .cataSand)
+    private func statsSection(_ habit: Habit) -> some View {
+        HStack(spacing: 0) {
+            statCell("\(habit.currentStreak)", "streak", accent: true)
+            Rectangle().fill(Color.cataSand).frame(width: 0.5, height: 40)
+            statCell("\(Int(habit.completionRateLast7Days * 100))%", "7-day rate")
+            Rectangle().fill(Color.cataSand).frame(width: 0.5, height: 40)
+            statCell("\(checkIns.count)", "check-ins")
+        }
+        .padding(.vertical, 20)
+        .padding(.horizontal, 24)
+    }
+
+    private func statCell(_ value: String, _ label: String, accent: Bool = false) -> some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(.system(size: 22, weight: .light, design: .serif))
+                .foregroundStyle(accent ? Color.cataTerra : Color.cataInk)
+                .contentTransition(.numericText())
+            Text(label.uppercased())
+                .font(.system(size: 8, weight: .medium, design: .monospaced))
+                .foregroundStyle(Color.cataMuted)
+                .kerning(1.5)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func calendarSection(_ habit: Habit) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("CALENDAR".uppercased())
+                .font(.system(size: 9, weight: .medium, design: .monospaced))
+                .foregroundStyle(Color.cataMuted)
+                .kerning(2)
+                .padding(.horizontal, 24)
+                .padding(.top, 20)
+                .padding(.bottom, 16)
+            CalendarStreakView(habit: habit)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 20)
         }
     }
 
-    private func statCard(_ value: String, _ label: String, _ icon: String, _ color: Color) -> some View {
-        VStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 17))
-                .foregroundStyle(color)
-            Text(value)
-                .font(.system(size: 22, weight: .bold, design: .serif))
-                .foregroundStyle(Color.cataInk)
-                .contentTransition(.numericText())
-            Text(label)
-                .font(.system(size: 10, weight: .medium))
+    private func weeklySection(_ habit: Habit) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("THIS WEEK".uppercased())
+                .font(.system(size: 9, weight: .medium, design: .monospaced))
                 .foregroundStyle(Color.cataMuted)
-                .textCase(.uppercase)
-                .kerning(0.6)
+                .kerning(2)
+                .padding(.horizontal, 24)
+                .padding(.top, 20)
+                .padding(.bottom, 16)
+            WeeklySummaryView(habit: habit, checkIns: checkIns)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 20)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 18)
-        .background(RoundedRectangle(cornerRadius: 16).fill(Color.cataCard))
     }
 
     private var emptyState: some View {
-        VStack(spacing: 14) {
-            Image(systemName: "chart.bar")
-                .font(.system(size: 38))
-                .foregroundStyle(Color.cataMuted.opacity(0.35))
-            Text("Set a habit to see your progress")
-                .font(.system(size: 16))
+        VStack(alignment: .leading, spacing: 8) {
+            Text("no habit set yet")
+                .font(.system(size: 15, design: .serif))
                 .foregroundStyle(Color.cataMuted)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(24)
     }
 }

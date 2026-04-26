@@ -1,181 +1,174 @@
 import SwiftUI
 
-/// Animated flower that grows more elaborate as the streak increases.
-/// Stages: seed → sprout → bud → early bloom → full bloom → flourishing
+/// Cherry blossom that blossoms petal by petal as the streak grows.
+/// Ink sketch style — monochrome until streak 7, then soft pink washes in.
 struct FlowerView: View {
     let streak: Int
 
-    @State private var appeared = false
+    @State private var petalAngles: [Double] = Array(repeating: 0, count: 8)
+    @State private var petalScales: [CGFloat] = Array(repeating: 0, count: 8)
+    @State private var stemHeight: CGFloat = 0
+    @State private var colorSaturation: Double = 0
     @State private var sway: Double = 0
 
-    private var stage: Stage {
+    private var petalCount: Int {
         switch streak {
-        case 0:       return .seed
-        case 1...2:   return .sprout
-        case 3...6:   return .bud
-        case 7...13:  return .earlyBloom
-        case 14...29: return .fullBloom
-        default:      return .flourishing
+        case 0:       return 0
+        case 1...2:   return 1
+        case 3...4:   return 2
+        case 5...6:   return 3
+        case 7...10:  return 5
+        case 11...20: return 7
+        default:      return 8
         }
     }
 
-    enum Stage { case seed, sprout, bud, earlyBloom, fullBloom, flourishing }
+    private var targetStemHeight: CGFloat {
+        switch streak {
+        case 0:       return 0
+        case 1...3:   return 30
+        case 4...6:   return 50
+        default:      return 65
+        }
+    }
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            stageView
-        }
-        .frame(width: 140, height: 180)
-        .scaleEffect(appeared ? 1 : 0.4)
-        .opacity(appeared ? 1 : 0)
-        .onAppear {
-            withAnimation(.spring(response: 0.7, dampingFraction: 0.6)) {
-                appeared = true
+            // Stem
+            stemView
+
+            // Leaves
+            if streak >= 3 {
+                leafView(angle: -35, xOffset: -12, yOffset: -30)
+                leafView(angle:  35, xOffset:  12, yOffset: -44)
             }
-            withAnimation(.easeInOut(duration: 2.8).repeatForever(autoreverses: true)) {
-                sway = 1
-            }
-        }
-        .onChange(of: streak) {
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.55)) {
-                appeared = true
-            }
-        }
-    }
 
-    // MARK: - Stage routing
-
-    @ViewBuilder
-    private var stageView: some View {
-        switch stage {
-        case .seed:       seedView
-        case .sprout:     sproutView
-        case .bud:        budView
-        case .earlyBloom: bloomView(petals: 5, flowerSize: 0.72)
-        case .fullBloom:  bloomView(petals: 8, flowerSize: 1.0)
-        case .flourishing: flourishingView
-        }
-    }
-
-    // MARK: - Stages
-
-    private var seedView: some View {
-        Ellipse()
-            .fill(Color(hex: "8B6347"))
-            .frame(width: 14, height: 9)
-            .offset(y: -6)
-    }
-
-    private var sproutView: some View {
-        ZStack(alignment: .bottom) {
-            stem(height: 48)
-            leaf(angle: -28, x: -11, y: -18, w: 18, h: 10)
-            leaf(angle:  28, x:  11, y: -28, w: 18, h: 10)
-        }
-    }
-
-    private var budView: some View {
-        ZStack(alignment: .bottom) {
-            stem(height: 75)
-            leaf(angle: -32, x: -14, y: -28, w: 26, h: 13)
-            leaf(angle:  32, x:  14, y: -42, w: 26, h: 13)
-            Ellipse()
-                .fill(LinearGradient(
-                    colors: [Color.cataPetal, Color.cataPetalD],
-                    startPoint: .top, endPoint: .bottom
-                ))
-                .frame(width: 22, height: 34)
-                .offset(y: -86)
-        }
-    }
-
-    private func bloomView(petals: Int, flowerSize s: CGFloat) -> some View {
-        ZStack(alignment: .bottom) {
-            stem(height: 95 * s)
-            leaf(angle: -34, x: -17 * s, y: -38 * s, w: 30 * s, h: 15 * s)
-            leaf(angle:  34, x:  17 * s, y: -54 * s, w: 30 * s, h: 15 * s)
-
-            flowerHead(petalCount: petals, size: s)
-                .offset(y: -(108 * s))
-                .rotationEffect(.degrees(sway * 3.5), anchor: .bottom)
-        }
-    }
-
-    private var flourishingView: some View {
-        ZStack(alignment: .bottom) {
-            stem(height: 105)
-            leaf(angle: -34, x: -18, y: -38, w: 32, h: 16)
-            leaf(angle:  34, x:  18, y: -55, w: 32, h: 16)
-
-            // main bloom
-            flowerHead(petalCount: 10, size: 1.0)
-                .overlay {
-                    ForEach(0..<5, id: \.self) { i in
-                        petal(size: 0.58)
-                            .rotationEffect(.degrees(Double(i) * 72 + 18))
-                    }
+            // Petals
+            ZStack {
+                ForEach(0..<petalCount, id: \.self) { i in
+                    CherryPetal()
+                        .fill(petalFill(index: i))
+                        .overlay(
+                            CherryPetal()
+                                .stroke(Color.cataInk.opacity(0.25), lineWidth: 0.5)
+                        )
+                        .frame(width: 18, height: 26)
+                        .offset(y: -14)
+                        .rotationEffect(.degrees(petalAngle(index: i, total: petalCount)))
+                        .scaleEffect(petalScales[i])
                 }
-                .offset(y: -116)
-                .rotationEffect(.degrees(sway * 3), anchor: .bottom)
 
-            // small accent flower
-            miniFlower
-                .offset(x: 32, y: -72)
+                // Center dot
+                if petalCount > 0 {
+                    Circle()
+                        .fill(streak >= 7 ? Color(hex: "FFE566") : Color.cataInk.opacity(0.7))
+                        .overlay(Circle().stroke(Color.cataInk.opacity(0.2), lineWidth: 0.5))
+                        .frame(width: 8, height: 8)
+                        .scaleEffect(petalScales[0])
+                }
+            }
+            .offset(y: -(targetStemHeight + 14))
+            .rotationEffect(.degrees(sway * 2.5), anchor: .bottom)
         }
+        .frame(width: 100, height: 130)
+        .onAppear { animate() }
+        .onChange(of: streak) { animate() }
     }
 
-    private var miniFlower: some View {
-        ZStack {
-            ForEach(0..<6, id: \.self) { i in
-                Ellipse()
-                    .fill(Color.cataPetal.opacity(0.75))
-                    .frame(width: 9, height: 16)
-                    .offset(y: -9)
-                    .rotationEffect(.degrees(Double(i) * 60))
-            }
-            Circle()
-                .fill(Color.cataCenter.opacity(0.9))
-                .frame(width: 9, height: 9)
-        }
+    // MARK: - Subviews
+
+    private var stemView: some View {
+        Capsule()
+            .fill(Color.stemInk.opacity(0.7))
+            .frame(width: 1.5, height: stemHeight)
+            .offset(y: -stemHeight / 2)
+    }
+
+    private func leafView(angle: Double, xOffset: CGFloat, yOffset: CGFloat) -> some View {
+        Ellipse()
+            .fill(Color.stemInk.opacity(0.5))
+            .overlay(Ellipse().stroke(Color.stemInk.opacity(0.3), lineWidth: 0.5))
+            .frame(width: 14, height: 8)
+            .rotationEffect(.degrees(angle))
+            .offset(x: xOffset, y: yOffset)
     }
 
     // MARK: - Helpers
 
-    private func stem(height h: CGFloat) -> some View {
-        Capsule()
-            .fill(Color.cataStem)
-            .frame(width: 3.5, height: h)
-            .offset(y: -h / 2)
+    private func petalAngle(index: Int, total: Int) -> Double {
+        guard total > 0 else { return 0 }
+        return Double(index) * (360.0 / Double(total))
     }
 
-    private func leaf(angle: Double, x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat) -> some View {
-        Ellipse()
-            .fill(Color.cataLeaf.opacity(0.85))
-            .frame(width: w, height: h)
-            .rotationEffect(.degrees(angle))
-            .offset(x: x, y: y)
-    }
-
-    private func petal(size s: CGFloat) -> some View {
-        Ellipse()
-            .fill(LinearGradient(
-                colors: [Color.cataPetal, Color.cataPetalD.opacity(0.7)],
-                startPoint: .top, endPoint: .bottom
+    private func petalFill(index: Int) -> some ShapeStyle {
+        if streak >= 7 {
+            return AnyShapeStyle(LinearGradient(
+                colors: [Color.blossomWhite, Color.blossomPink],
+                startPoint: .top,
+                endPoint: .bottom
             ))
-            .frame(width: 17 * s, height: 30 * s)
-            .offset(y: -(15 * s))
+        }
+        return AnyShapeStyle(Color.cataInk.opacity(0.08))
     }
 
-    private func flowerHead(petalCount: Int, size s: CGFloat) -> some View {
-        ZStack {
-            ForEach(0..<petalCount, id: \.self) { i in
-                petal(size: s)
-                    .rotationEffect(.degrees(Double(i) * (360.0 / Double(petalCount))))
-            }
-            Circle()
-                .fill(Color.cataCenter)
-                .frame(width: 17 * s, height: 17 * s)
-                .shadow(color: .black.opacity(0.08), radius: 2)
+    private func animate() {
+        withAnimation(.spring(response: 0.7, dampingFraction: 0.7)) {
+            stemHeight = targetStemHeight
         }
+        for i in 0..<petalCount {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.6).delay(Double(i) * 0.08)) {
+                petalScales[i] = 1.0
+            }
+        }
+        // Collapse petals that no longer exist
+        for i in petalCount..<8 {
+            petalScales[i] = 0
+        }
+        withAnimation(.easeInOut(duration: 3.5).repeatForever(autoreverses: true).delay(0.5)) {
+            sway = 1
+        }
+    }
+}
+
+// MARK: - Petal Shape
+
+struct CherryPetal: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        let w = rect.width
+        let h = rect.height
+        let mx = w / 2
+
+        // Start at the notched tip
+        p.move(to: CGPoint(x: mx - 1.5, y: 0))
+        p.addCurve(
+            to: CGPoint(x: mx + 1.5, y: 0),
+            control1: CGPoint(x: mx - 1.5, y: -3),
+            control2: CGPoint(x: mx + 1.5, y: -3)
+        )
+        // Right side curve down to base
+        p.addCurve(
+            to: CGPoint(x: w, y: h * 0.65),
+            control1: CGPoint(x: w * 1.1, y: h * 0.15),
+            control2: CGPoint(x: w * 1.05, y: h * 0.45)
+        )
+        p.addCurve(
+            to: CGPoint(x: mx, y: h),
+            control1: CGPoint(x: w * 0.9, y: h * 0.85),
+            control2: CGPoint(x: w * 0.65, y: h)
+        )
+        // Left side curve back up
+        p.addCurve(
+            to: CGPoint(x: 0, y: h * 0.65),
+            control1: CGPoint(x: w * 0.35, y: h),
+            control2: CGPoint(x: w * 0.1, y: h * 0.85)
+        )
+        p.addCurve(
+            to: CGPoint(x: mx - 1.5, y: 0),
+            control1: CGPoint(x: -w * 0.05, y: h * 0.45),
+            control2: CGPoint(x: -w * 0.1, y: h * 0.15)
+        )
+        p.closeSubpath()
+        return p
     }
 }

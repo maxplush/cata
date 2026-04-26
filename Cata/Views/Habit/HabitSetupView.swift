@@ -18,99 +18,109 @@ struct HabitSetupView: View {
         "write 500 words"
     ]
 
+    private var rule: some View {
+        Rectangle().fill(Color.cataSand).frame(maxWidth: .infinity).frame(height: 0.5)
+    }
+
     var body: some View {
         ZStack {
             Color.cataBg.ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
-                closeButton
-                    .padding(.top, 20)
+                // Header
+                HStack {
+                    Button { dismiss() } label: {
+                        Text("✕")
+                            .font(.system(size: 14))
+                            .foregroundStyle(Color.cataMuted)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 32)
+                .padding(.top, 28)
+                .padding(.bottom, 24)
+
+                rule
+
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("DAILY HABIT".uppercased())
+                        .font(.system(size: 9, weight: .medium, design: .monospaced))
+                        .foregroundStyle(Color.cataMuted)
+                        .kerning(2)
+
+                    Text("One thing, done every day.")
+                        .font(.system(size: 22, weight: .light, design: .serif))
+                        .foregroundStyle(Color.cataInk)
+
+                    ZStack(alignment: .topLeading) {
+                        if habitText.isEmpty {
+                            Text("read 10 pages a day")
+                                .font(.system(size: 15, design: .serif))
+                                .foregroundStyle(Color.cataMuted.opacity(0.45))
+                                .padding(.top, 2)
+                                .allowsHitTesting(false)
+                        }
+                        TextEditor(text: $habitText)
+                            .font(.system(size: 15, design: .serif))
+                            .foregroundStyle(Color.cataInk)
+                            .scrollContentBackground(.hidden)
+                            .frame(height: 60)
+                            .padding(.top, -4)
+                    }
+                    .overlay(alignment: .bottom) {
+                        Rectangle().fill(Color.cataSand).frame(height: 0.5)
+                    }
+                }
+                .padding(.horizontal, 32)
+                .padding(.top, 28)
 
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Your daily habit")
-                        .font(.system(size: 30, weight: .semibold, design: .serif))
-                        .foregroundStyle(Color.cataInk)
-                    Text("Keep it simple and specific. One habit, done every day.")
-                        .font(.system(size: 15))
+                    Text("IDEAS".uppercased())
+                        .font(.system(size: 9, weight: .medium, design: .monospaced))
                         .foregroundStyle(Color.cataMuted)
-                        .lineSpacing(4)
-                }
-                .padding(.top, 28)
+                        .kerning(2)
 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("I want to…")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Color.cataMuted)
-                        .textCase(.uppercase)
-                        .kerning(1)
-                    TextField("read 10 pages a day", text: $habitText)
-                        .font(.system(size: 18))
-                        .foregroundStyle(Color.cataInk)
-                        .padding(16)
-                        .background(RoundedRectangle(cornerRadius: 14).fill(Color.cataCard))
-                }
-                .padding(.top, 28)
-
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Ideas")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Color.cataMuted)
-                        .textCase(.uppercase)
-                        .kerning(1)
                     FlowLayout(spacing: 8) {
                         ForEach(suggestions, id: \.self) { s in
                             Button { habitText = s } label: {
                                 Text(s)
-                                    .font(.system(size: 14))
-                                    .foregroundStyle(habitText == s ? Color.cataTerra : Color.cataInk)
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 9)
-                                    .background(
-                                        Capsule().fill(habitText == s
-                                            ? Color.cataTerra.opacity(0.12)
-                                            : Color.cataCard)
-                                    )
+                                    .font(.system(size: 12, design: .monospaced))
+                                    .foregroundStyle(habitText == s ? Color.cataBg : Color.cataInk)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 7)
+                                    .background(habitText == s ? Color.cataInk : Color.cataCard)
                             }
                         }
                     }
                 }
-                .padding(.top, 24)
+                .padding(.horizontal, 32)
+                .padding(.top, 28)
 
                 Spacer()
 
+                rule
+
                 Button { saveHabit() } label: {
-                    Text("Set habit")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(habitText.trimmingCharacters(in: .whitespaces).isEmpty
-                                    ? Color.cataSand.opacity(0.4)
-                                    : Color.cataTerra)
-                        )
+                    HStack {
+                        Text("SET HABIT")
+                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                            .kerning(2)
+                            .foregroundStyle(habitText.trimmingCharacters(in: .whitespaces).isEmpty ? Color.cataMuted : Color.cataBg)
+                        Spacer()
+                        Text("→")
+                            .font(.system(size: 16))
+                            .foregroundStyle(habitText.trimmingCharacters(in: .whitespaces).isEmpty ? Color.cataMuted : Color.cataBg)
+                    }
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 20)
+                    .background(habitText.trimmingCharacters(in: .whitespaces).isEmpty ? Color.cataSand : Color.cataInk)
                 }
                 .disabled(habitText.trimmingCharacters(in: .whitespaces).isEmpty)
-                .padding(.bottom, 48)
                 .animation(.easeInOut(duration: 0.15), value: habitText)
             }
-            .padding(.horizontal, 28)
         }
         .onAppear {
-            if let existing = habits.first(where: \.isActive) {
-                habitText = existing.title
-            }
-        }
-    }
-
-    private var closeButton: some View {
-        Button { dismiss() } label: {
-            Image(systemName: "xmark")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(Color.cataMuted)
-                .padding(10)
-                .background(Circle().fill(Color.cataCard))
+            if let existing = habits.first(where: \.isActive) { habitText = existing.title }
         }
     }
 
@@ -133,14 +143,9 @@ struct FlowLayout: Layout {
         var y: CGFloat = 0
         var rowH: CGFloat = 0
         let width = proposal.width ?? .infinity
-
         for view in subviews {
             let size = view.sizeThatFits(.unspecified)
-            if x + size.width > width, x > 0 {
-                y += rowH + spacing
-                x = 0
-                rowH = 0
-            }
+            if x + size.width > width, x > 0 { y += rowH + spacing; x = 0; rowH = 0 }
             rowH = max(rowH, size.height)
             x += size.width + spacing
         }
@@ -151,14 +156,9 @@ struct FlowLayout: Layout {
         var x = bounds.minX
         var y = bounds.minY
         var rowH: CGFloat = 0
-
         for view in subviews {
             let size = view.sizeThatFits(.unspecified)
-            if x + size.width > bounds.maxX, x > bounds.minX {
-                y += rowH + spacing
-                x = bounds.minX
-                rowH = 0
-            }
+            if x + size.width > bounds.maxX, x > bounds.minX { y += rowH + spacing; x = bounds.minX; rowH = 0 }
             view.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
             rowH = max(rowH, size.height)
             x += size.width + spacing

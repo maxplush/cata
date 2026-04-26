@@ -12,10 +12,10 @@ struct DailyCheckInView: View {
     @State private var stopDoing = ""
     @State private var done = false
 
-    private let questions: [(title: String, icon: String, hint: String)] = [
-        ("What are you grateful for today?",          "sun.max.fill",    "Even small things count."),
-        ("What's one thing you want to accomplish?",  "target",          "Just one. Make it real."),
-        ("What do you want to stop doing today?",     "xmark.circle.fill","Name it to tame it.")
+    private let questions: [(label: String, prompt: String)] = [
+        ("GRATITUDE",    "What are you grateful for today?"),
+        ("INTENTION",    "What's one thing you want to accomplish?"),
+        ("RELEASE",      "What do you want to stop doing today?")
     ]
 
     private var currentAnswer: Binding<String> {
@@ -29,34 +29,48 @@ struct DailyCheckInView: View {
         }
     }
 
-    // MARK: - Flow
-
     private var flowView: some View {
-        VStack(spacing: 0) {
-            header
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-
-            Spacer()
-
-            VStack(alignment: .leading, spacing: 22) {
-                HStack(spacing: 10) {
-                    Image(systemName: questions[step].icon)
-                        .font(.system(size: 18))
-                        .foregroundStyle(Color.cataTerra)
-                    Text(questions[step].hint)
+        VStack(alignment: .leading, spacing: 0) {
+            // Header
+            HStack {
+                Button { dismiss() } label: {
+                    Text("✕")
                         .font(.system(size: 14))
                         .foregroundStyle(Color.cataMuted)
                 }
+                Spacer()
+                HStack(spacing: 5) {
+                    ForEach(0..<3) { i in
+                        Rectangle()
+                            .fill(i <= step ? Color.cataInk : Color.cataSand)
+                            .frame(width: i == step ? 16 : 8, height: 1)
+                            .animation(.spring(response: 0.3), value: step)
+                    }
+                }
+                Spacer()
+                Color.clear.frame(width: 20)
+            }
+            .padding(.horizontal, 32)
+            .padding(.top, 28)
+            .padding(.bottom, 24)
 
-                Text(questions[step].title)
-                    .font(.system(size: 26, weight: .semibold, design: .serif))
+            thinRule
+
+            VStack(alignment: .leading, spacing: 16) {
+                Text(questions[step].label)
+                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .foregroundStyle(Color.cataTerra)
+                    .kerning(2)
+
+                Text(questions[step].prompt)
+                    .font(.system(size: 22, weight: .light, design: .serif))
                     .foregroundStyle(Color.cataInk)
-                    .lineSpacing(4)
+                    .lineSpacing(6)
 
                 textArea(binding: currentAnswer)
             }
-            .padding(.horizontal, 28)
+            .padding(.horizontal, 32)
+            .padding(.top, 28)
             .id(step)
             .transition(.asymmetric(
                 insertion: .move(edge: .trailing).combined(with: .opacity),
@@ -65,135 +79,104 @@ struct DailyCheckInView: View {
 
             Spacer()
 
+            thinRule
+
             Button {
                 withAnimation(.spring(response: 0.4)) { advance() }
             } label: {
-                Text(step < 2 ? "Next" : "Done")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(canAdvance ? Color.cataTerra : Color.cataSand.opacity(0.4))
-                    )
+                HStack {
+                    Text((step < 2 ? "Next" : "Done").uppercased())
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .kerning(2)
+                        .foregroundStyle(canAdvance ? Color.cataBg : Color.cataMuted)
+                    Spacer()
+                    Text("→")
+                        .font(.system(size: 16))
+                        .foregroundStyle(canAdvance ? Color.cataBg : Color.cataMuted)
+                }
+                .padding(.horizontal, 32)
+                .padding(.vertical, 20)
+                .background(canAdvance ? Color.cataInk : Color.cataSand)
             }
             .disabled(!canAdvance)
-            .padding(.horizontal, 28)
-            .padding(.bottom, 48)
-            .animation(.easeInOut(duration: 0.2), value: canAdvance)
+            .animation(.easeInOut(duration: 0.15), value: canAdvance)
         }
     }
 
-    private var header: some View {
-        HStack {
-            Button { dismiss() } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 15, weight: .medium))
+    private var completionView: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Spacer()
+            VStack(alignment: .leading, spacing: 12) {
+                Text("✓")
+                    .font(.system(size: 32))
+                    .foregroundStyle(Color.cataTerra)
+                Text("You're set for today.")
+                    .font(.system(size: 26, weight: .light, design: .serif))
+                    .foregroundStyle(Color.cataInk)
+                Text("Now go make it count.")
+                    .font(.system(size: 14, design: .monospaced))
                     .foregroundStyle(Color.cataMuted)
-                    .padding(10)
-                    .background(Circle().fill(Color.cataCard))
             }
+            .padding(.horizontal, 32)
             Spacer()
-            HStack(spacing: 7) {
-                ForEach(0..<3) { i in
-                    Circle()
-                        .fill(i <= step ? Color.cataTerra : Color.cataSand.opacity(0.35))
-                        .frame(width: 8, height: 8)
-                        .animation(.spring(response: 0.3), value: step)
+            thinRule
+            Button { dismiss() } label: {
+                HStack {
+                    Text("CLOSE")
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .kerning(2)
+                        .foregroundStyle(Color.cataBg)
+                    Spacer()
                 }
+                .padding(.horizontal, 32)
+                .padding(.vertical, 20)
+                .background(Color.cataInk)
             }
-            Spacer()
-            Color.clear.frame(width: 36, height: 36)
         }
     }
 
     private func textArea(binding: Binding<String>) -> some View {
         ZStack(alignment: .topLeading) {
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.cataCard)
-                .frame(minHeight: 130)
-
             if binding.wrappedValue.isEmpty {
                 Text("Write freely...")
-                    .font(.system(size: 16))
-                    .foregroundStyle(Color.cataMuted.opacity(0.5))
-                    .padding(16)
+                    .font(.system(size: 15, design: .serif))
+                    .foregroundStyle(Color.cataMuted.opacity(0.45))
+                    .padding(.top, 2)
                     .allowsHitTesting(false)
             }
-
             TextEditor(text: binding)
-                .font(.system(size: 16))
+                .font(.system(size: 15, design: .serif))
                 .foregroundStyle(Color.cataInk)
                 .scrollContentBackground(.hidden)
-                .padding(12)
                 .frame(minHeight: 130)
+                .padding(.top, -4)
+        }
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(Color.cataSand).frame(height: 0.5)
         }
     }
 
-    // MARK: - Completion
-
-    private var completionView: some View {
-        VStack(spacing: 24) {
-            Spacer()
-            ZStack {
-                Circle()
-                    .fill(Color.cataTerra.opacity(0.1))
-                    .frame(width: 100, height: 100)
-                Image(systemName: "checkmark")
-                    .font(.system(size: 38, weight: .semibold))
-                    .foregroundStyle(Color.cataTerra)
-            }
-            VStack(spacing: 8) {
-                Text("You're set for today.")
-                    .font(.system(size: 24, weight: .semibold, design: .serif))
-                    .foregroundStyle(Color.cataInk)
-                Text("Now go make it count.")
-                    .font(.system(size: 16))
-                    .foregroundStyle(Color.cataMuted)
-            }
-            Spacer()
-            Button { dismiss() } label: {
-                Text("Close")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(Color.cataTerra)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.cataTerra.opacity(0.1)))
-            }
-            .padding(.horizontal, 28)
-            .padding(.bottom, 48)
-        }
+    private var thinRule: some View {
+        Rectangle().fill(Color.cataSand).frame(maxWidth: .infinity).frame(height: 0.5)
     }
-
-    // MARK: - Logic
 
     private var canAdvance: Bool {
         !currentAnswer.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private func advance() {
-        if step < 2 {
-            step += 1
-        } else {
-            save()
-            withAnimation { done = true }
-        }
+        if step < 2 { step += 1 }
+        else { save(); withAnimation { done = true } }
     }
 
     private func save() {
-        let checkIn = DailyCheckIn(
+        context.insert(DailyCheckIn(
             gratitude: gratitude,
             accomplishment: accomplishment,
             stopDoing: stopDoing
-        )
-        context.insert(checkIn)
-
+        ))
         if let profile = profiles.first {
-            NotificationManager.shared.scheduleEveningNudge(
-                profile: profile,
-                intention: accomplishment
-            )
+            NotificationManager.shared.scheduleEveningNudge(profile: profile, intention: accomplishment)
         }
     }
 }

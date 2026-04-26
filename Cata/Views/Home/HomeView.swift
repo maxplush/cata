@@ -10,6 +10,7 @@ struct HomeView: View {
 
     private var activeHabit: Habit? { habits.first(where: \.isActive) }
     private var checkedInToday: Bool { checkIns.first?.date.isToday == true }
+    private var quote: Quote { QuoteStore.today }
 
     var body: some View {
         NavigationStack {
@@ -17,26 +18,25 @@ struct HomeView: View {
                 Color.cataBg.ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: 20) {
-                        dateHeader
-                            .padding(.top, 16)
+                    VStack(alignment: .leading, spacing: 0) {
+                        pageHeader
+                        rule
+                        quoteSection
+                        rule
+                        habitSection
+                        rule
 
                         if !checkedInToday {
-                            checkInCard
-                        }
-
-                        if let habit = activeHabit {
-                            HabitTrackerView(habit: habit)
-                        } else {
-                            habitSetupCard
+                            checkInRow
+                            rule
                         }
 
                         if checkedInToday, let checkIn = checkIns.first {
-                            todaysIntentionCard(checkIn)
+                            intentionRow(checkIn)
+                            rule
                         }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 40)
+                    .padding(.bottom, 60)
                 }
             }
             .navigationBarHidden(true)
@@ -53,103 +53,126 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - Subviews
+    // MARK: - Sections
 
-    private var dateHeader: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(Date().formatted(.dateTime.weekday(.wide)))
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(Color.cataMuted)
-                    .textCase(.uppercase)
-                    .kerning(1.2)
-                Text(Date().formatted(.dateTime.month(.wide).day()))
-                    .font(.system(size: 30, weight: .semibold, design: .serif))
-                    .foregroundStyle(Color.cataInk)
-            }
-            Spacer()
-            Text("cata")
-                .font(.system(size: 22, weight: .bold, design: .serif))
-                .foregroundStyle(Color.cataTerra)
-                .padding(.top, 6)
-        }
-    }
-
-    private var checkInCard: some View {
-        Button { showCheckIn = true } label: {
-            HStack(spacing: 16) {
-                ZStack {
-                    Circle()
-                        .fill(Color.cataTerra.opacity(0.12))
-                        .frame(width: 50, height: 50)
-                    Image(systemName: "sun.horizon.fill")
-                        .font(.system(size: 20))
-                        .foregroundStyle(Color.cataTerra)
-                }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Morning check-in")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(Color.cataInk)
-                    Text("Start your day with intention")
-                        .font(.system(size: 13))
-                        .foregroundStyle(Color.cataMuted)
-                }
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color.cataMuted.opacity(0.6))
-            }
-            .padding(20)
-            .background(RoundedRectangle(cornerRadius: 20).fill(Color.cataCard))
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var habitSetupCard: some View {
-        Button { showHabitSetup = true } label: {
-            VStack(spacing: 16) {
-                Image(systemName: "leaf.fill")
-                    .font(.system(size: 28))
-                    .foregroundStyle(Color.cataSage)
-                VStack(spacing: 6) {
-                    Text("Set your daily habit")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(Color.cataInk)
-                    Text("One small thing, done every day.")
-                        .font(.system(size: 14))
-                        .foregroundStyle(Color.cataMuted)
-                }
-                Text("Get started")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color.cataTerra)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 10)
-                    .background(Capsule().fill(Color.cataTerra.opacity(0.1)))
-            }
-            .frame(maxWidth: .infinity)
-            .padding(32)
-            .background(RoundedRectangle(cornerRadius: 20).fill(Color.cataCard))
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func todaysIntentionCard(_ checkIn: DailyCheckIn) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Today's intention")
-                .font(.system(size: 11, weight: .semibold))
+    private var pageHeader: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(Date().formatted(.dateTime.weekday(.wide)).uppercased())
+                .font(.system(size: 11, weight: .medium, design: .monospaced))
                 .foregroundStyle(Color.cataMuted)
-                .textCase(.uppercase)
-                .kerning(1.2)
+                .kerning(2)
+            Spacer()
+            Text(Date().formatted(.dateTime.month(.abbreviated).day().year()))
+                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .foregroundStyle(Color.cataMuted)
+                .kerning(1)
+            Text("cata")
+                .font(.system(size: 16, weight: .light, design: .serif))
+                .foregroundStyle(Color.cataTerra)
+                .kerning(3)
+                .padding(.leading, 14)
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 64)
+        .padding(.bottom, 16)
+    }
+
+    private var quoteSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("\u{201C}\(quote.text)\u{201D}")
+                .font(.system(size: 15, weight: .light, design: .serif))
+                .foregroundStyle(Color.cataInk)
+                .lineSpacing(6)
+                .italic()
+            Text("— \(quote.author)")
+                .font(.system(size: 11, weight: .regular, design: .monospaced))
+                .foregroundStyle(Color.cataMuted)
+                .kerning(0.5)
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 20)
+    }
+
+    private var habitSection: some View {
+        Group {
+            if let habit = activeHabit {
+                VStack(spacing: 0) {
+                    HabitTrackerView(habit: habit)
+                    Button { showHabitSetup = true } label: {
+                        HStack {
+                            Text("change habit")
+                                .font(.system(size: 10, weight: .regular, design: .monospaced))
+                                .foregroundStyle(Color.cataMuted)
+                                .kerning(1)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 12)
+                    }
+                    .buttonStyle(.plain)
+                }
+            } else {
+                habitSetupRow
+            }
+        }
+    }
+
+    private var habitSetupRow: some View {
+        Button { showHabitSetup = true } label: {
+            HStack {
+                Text("set your daily habit")
+                    .font(.system(size: 13, weight: .regular, design: .monospaced))
+                    .foregroundStyle(Color.cataMuted)
+                    .kerning(0.5)
+                Spacer()
+                Text("+")
+                    .font(.system(size: 18, weight: .light))
+                    .foregroundStyle(Color.cataTerra)
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var checkInRow: some View {
+        Button { showCheckIn = true } label: {
+            HStack {
+                Text("morning check-in")
+                    .font(.system(size: 13, weight: .regular, design: .monospaced))
+                    .foregroundStyle(Color.cataMuted)
+                    .kerning(0.5)
+                Spacer()
+                Text("→")
+                    .font(.system(size: 16))
+                    .foregroundStyle(Color.cataTerra)
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func intentionRow(_ checkIn: DailyCheckIn) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("intention".uppercased())
+                .font(.system(size: 9, weight: .medium, design: .monospaced))
+                .foregroundStyle(Color.cataMuted)
+                .kerning(2)
             Text(checkIn.accomplishment)
-                .font(.system(size: 16, design: .serif))
+                .font(.system(size: 15, design: .serif))
                 .foregroundStyle(Color.cataInk)
                 .lineSpacing(4)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.cataSage.opacity(0.12))
-        )
+        .padding(.horizontal, 24)
+        .padding(.vertical, 20)
+    }
+
+    private var rule: some View {
+        Rectangle()
+            .fill(Color.cataSand)
+            .frame(maxWidth: .infinity)
+            .frame(height: 0.5)
+            .padding(.horizontal, 24)
     }
 }
