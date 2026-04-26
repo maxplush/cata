@@ -4,6 +4,7 @@ import SwiftData
 struct ProgressTabView: View {
     @Query(sort: \Habit.createdAt, order: .reverse) private var habits: [Habit]
     @Query(sort: \DailyCheckIn.date, order: .reverse) private var checkIns: [DailyCheckIn]
+    @State private var showJournal = false
 
     private var active: Habit? { habits.first(where: \.isActive) }
 
@@ -25,6 +26,8 @@ struct ProgressTabView: View {
                             calendarSection(habit)
                             rule
                             weeklySection(habit)
+                            rule
+                            journalRow
                         }
                         .padding(.bottom, 60)
                     }
@@ -34,7 +37,35 @@ struct ProgressTabView: View {
             }
             .navigationTitle("Progress")
             .navigationBarTitleDisplayMode(.large)
+            .sheet(isPresented: $showJournal) {
+                CheckInHistoryView()
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
+            }
         }
+    }
+
+    private var journalRow: some View {
+        Button { showJournal = true } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("JOURNAL".uppercased())
+                        .font(.system(size: 9, weight: .medium, design: .monospaced))
+                        .foregroundStyle(Color.cataMuted)
+                        .kerning(2)
+                    Text("\(checkIns.count) entries")
+                        .font(.system(size: 14, design: .serif))
+                        .foregroundStyle(Color.cataInk)
+                }
+                Spacer()
+                Text("→")
+                    .font(.system(size: 16))
+                    .foregroundStyle(Color.cataMuted)
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
+        }
+        .buttonStyle(.plain)
     }
 
     private func statsSection(_ habit: Habit) -> some View {

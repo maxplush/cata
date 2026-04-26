@@ -55,12 +55,14 @@ struct LifeInWeeksView: View {
 
             GeometryReader { geo in
                 HStack(spacing: 0) {
-                    Rectangle().fill(Color.cataInk).frame(width: geo.size.width * percentLived)
+                    Rectangle().fill(Color.cataInk)
+                        .frame(width: max(1, geo.size.width * percentLived))
                     Rectangle().fill(Color.cataSand)
                 }
                 .frame(height: 1)
+                .clipped()
             }
-            .frame(height: 1)
+            .frame(maxWidth: .infinity, minHeight: 1, maxHeight: 1)
 
             Text("\(weeksRemaining) remaining · 80yr average")
                 .font(.system(size: 10, design: .monospaced))
